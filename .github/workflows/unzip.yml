@@ -1,0 +1,37 @@
+name: Unzip Files
+
+on:
+  push:
+    paths:
+      - '**.zip'
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Unzip files safely
+        run: |
+          find . -type f -name "*.zip" ! -path "./.git/*" | while read zip; do
+            echo "Extracting $zip"
+            unzip -o "$zip" -d "$(dirname "$zip")"
+            rm "$zip"
+          done
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git status --porcelain | grep .; then
+            git add -A
+            git commit -m "Auto-extract zip files"
+            git push
+          else
+            echo "No changes to commit"
+          fi
